@@ -14,18 +14,20 @@ from typing import Callable, Tuple
 is_jax_backend = lambda: type(pyhf.get_backend()[0]) == pyhf.tensor.jax_backend
 
 
-def load_pyhf(ws:str) -> Tuple[pyhf.Model, np.ndarray, np.ndarray]:
+def load_pyhf(ws: str) -> Tuple[pyhf.Model, np.ndarray, np.ndarray]:
     """Load a pyhf workspace and return model, main_data and data."""
-    assert os.path.exists(ws) 
+    assert os.path.exists(ws), "No workspace '{}'".format(ws) 
 
-    print(f"load workspace '{ws}'")
+    print(f"load workspace '{ws}'", end=' ')
 
     with open(ws) as serialized:
         spec = json.load(serialized)
 
     workspace = pyhf.Workspace(spec)
     model = workspace.model()
-
+    nparam = len(model.config.suggested_init())
+    print('with {} parameter.'.format(nparam))
+    
     main_data = workspace.data(model, include_auxdata=False)
     main_data = np.array(main_data)
     
@@ -54,7 +56,7 @@ def pyhf_llh(ws: str) -> Callable:
     return jit(llh) if is_jax_backend() else llh 
 
 
-def pyhf_llh_with_grad(ws:str) -> Tuple[Callable, Callable]:
+def pyhf_llh_with_grad(ws: str) -> Tuple[Callable, Callable]:
     """
     Returns the Tuple (llh, llh_with_grad) for the pyhf workspace 'ws'
     that is required for PyCallDensityWithGrad. 
